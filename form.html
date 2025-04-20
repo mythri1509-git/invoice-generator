@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice Form & Search</title>
+  
+  <!-- Flag Icon CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icon-css/css/flag-icon.min.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: linear-gradient(to right, #d0f0f6, #eef7ff);
+      margin: 0;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+      padding: 30px;
+      margin-bottom: 30px;
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    h1, h2 {
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    label {
+      font-size: 15px;
+      margin-top: 15px;
+      display: block;
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="tel"],
+    select {
+      padding: 10px;
+      margin-top: 5px;
+      width: 100%;
+      max-width: 350px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fefefe;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .service-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .service-item input {
+      flex: 1 1 140px;
+    }
+
+    .service-item input[readonly] {
+      background-color: #f4f4f4;
+    }
+
+    .delete-row-btn {
+      background: none;
+      border: none;
+      color: red;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #2c3e50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #1b2a35;
+      transform: scale(1.03);
+    }
+
+    hr {
+      margin: 40px 0 20px;
+      border: none;
+      border-top: 1px solid #ccc;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    a {
+      color: #0077cc;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    option.flag-option {
+      background-repeat: no-repeat;
+      background-position: 5px center;
+      padding-left: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .form-row {
+        flex-direction: column;
+      }
+
+      .service-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .service-item input {
+        width: 100%;
+      }
+    }
+  </style>
+
+  <script>
+    function addService() {
+      const container = document.getElementById('services');
+      const div = document.createElement('div');
+      div.className = 'service-item';
+      div.innerHTML = `
+        <input type="text" name="description" placeholder="Service Description" required>
+        <input type="number" name="amount" placeholder="Amount" required oninput="updateSubtotal(this)">
+        <input type="number" name="tax" placeholder="Tax %" value="0" oninput="updateSubtotal(this)">
+        <input type="number" name="discount" placeholder="Discount %" value="0" oninput="updateSubtotal(this)">
+        <input type="text" name="subtotal" placeholder="Subtotal" readonly>
+        <button type="button" class="delete-row-btn" onclick="deleteService(this)">🗑</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function deleteService(btn) {
+      const row = btn.closest('.service-item');
+      if (row) row.remove();
+      updateTotalSummary();
+    }
+
+    function updateSubtotal(element) {
+      const serviceItem = element.closest('.service-item');
+      const amount = parseFloat(serviceItem.querySelector('input[name="amount"]').value) || 0;
+      const tax = parseFloat(serviceItem.querySelector('input[name="tax"]').value) || 0;
+      const discount = parseFloat(serviceItem.querySelector('input[name="discount"]').value) || 0;
+
+      const taxAmount = amount * (tax / 100);
+      const discountAmount = amount * (discount / 100);
+      const subtotal = amount + taxAmount - discountAmount;
+
+      serviceItem.querySelector('input[name="subtotal"]').value = subtotal.toFixed(2);
+    }
+
+    function updateTotalSummary() {
+      const serviceItems = document.querySelectorAll('.service-item');
+      let total = 0;
+      let totalTax = 0;
+      let totalDiscount = 0;
+
+      serviceItems.forEach(item => {
+        const amount = parseFloat(item.querySelector('input[name="amount"]').value) || 0;
+        const tax = parseFloat(item.querySelector('input[name="tax"]').value) || 0;
+        const discount = parseFloat(item.querySelector('input[name="discount"]').value) || 0;
+
+        total += amount;
+        totalTax += (amount * tax / 100);
+        totalDiscount += ((amount + (amount * tax / 100)) * discount / 100);
+      });
+
+      document.getElementById('totalAmount').textContent = total.toFixed(2);
+      document.getElementById('totalTax').textContent = totalTax.toFixed(2);
+      document.getElementById('totalDiscount').textContent = totalDiscount.toFixed(2);
+      document.getElementById('grandTotal').textContent = (total + totalTax - totalDiscount).toFixed(2);
+    }
+  </script>
+</head>
+<body>
+  <div class="card">
+    <h1>Generate Invoice</h1>
+    <form action="/generate_invoice" method="POST">
+      <div class="form-row">
+        <div>
+          <label><b>Customer Name:</b></label>
+          <input type="text" name="customer_name" required>
+        </div>
+        <div>
+          <label><b>Address:</b></label>
+          <input type="text" name="Address" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label><b>Mobile:</b></label>
+          <input type="tel" name="customer_mobile" required>
+        </div>
+        <div>
+          <label><b>Customer Email:</b></label>
+          <input type="email" name="email" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label><b>Payment Terms:</b></label>
+          <input type="text" name="payment_terms" required placeholder="e.g., Due on receipt">
+        </div>
+        <div>
+          <label><b>Currency:</b></label>
+          <select name="currency" required>
+            <option value="INR">&#x1f1ee;&#x1f1f3; INR ₹</option>
+            <option value="USD">&#x1f1fa;&#x1f1f8; USD $</option>
+            <option value="EUR">&#x1f1ea;&#x1f1fa; EUR €</option>
+          </select>
+        </div>
+      </div>
+
+      <label><b>Services:</b></label>
+      <div id="services">
+        <div class="service-item">
+          <input type="text" name="description" placeholder="Service Description" required>
+          <input type="number" name="amount" placeholder="Amount" required oninput="updateSubtotal(this)">
+          <input type="number" name="tax" placeholder="Tax %" value="0" oninput="updateSubtotal(this)">
+          <input type="number" name="discount" placeholder="Discount %" value="0" oninput="updateSubtotal(this)">
+          <input type="text" name="subtotal" placeholder="Subtotal" readonly>
+          <button type="button" class="delete-row-btn" onclick="deleteService(this)">🗑</button>
+        </div>
+      </div>
+
+      <button type="button" onclick="addService()">+ Add Another Service</button><br>
+      <button type="submit">Generate Invoice</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Search Previous Invoice</h2>
+    <form action="/search_invoice" method="POST">
+      <label>Enter Customer Name:</label>
+      <input type="text" name="search_name" required>
+      <button type="submit">Search</button>
+    </form>
+
+    {% if invoices %}
+      <h3>Matching Invoices:</h3>
+      <ul>
+        {% for file in invoices %}
+          <li><a href="{{ url_for('download_invoice', filename=file) }}" download>{{ file }}</a></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</body>
+</html>

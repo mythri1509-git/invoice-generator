@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Invoice</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background-color: #e8ecf1;
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .invoice-card {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      margin-top: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    .invoice-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .invoice-header img {
+      width: 150px;
+    }
+
+    .invoice-details p {
+      font-size: 16px;
+      margin: 5px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8f9fa;
+    }
+
+    .total {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: right;
+      margin-top: 20px;
+    }
+
+    .search-form {
+      margin-bottom: 30px;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    {% if not pdf %}
+    <!-- Search Form (only in browser, not in PDF) -->
+    <form action="/search_invoice" method="POST" class="search-form">
+      <label for="search_name">Search by Customer Name:</label>
+      <input type="text" name="search_name" placeholder="e.g., Mythri" required>
+      <button type="submit">Search Invoice</button>
+    </form>
+
+    <!-- Search Results -->
+    {% if invoices %}
+      <h3>Matching Invoices:</h3>
+      <ul>
+        {% for invoice in invoices %}
+          <li><a href="/download/{{ invoice }}">{{ invoice }}</a></li>
+        {% endfor %}
+      </ul>
+    {% elif invoices is defined %}
+      <p>No invoices found for this name.</p>
+    {% endif %}
+    {% endif %}
+
+    <!-- Invoice Content -->
+    <div class="invoice-card">
+      <div class="invoice-header">
+        <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Company Logo">
+        <div>
+          <h1>Invoice</h1>
+          <p><strong>Customer Name:</strong> {{ customer_name }}</p>
+          <p><strong>Date:</strong> {{ date }}</p>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Tax (%)</th>
+            <th>Discount (%)</th>
+            <th>Subtotal</th>
+            
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td>{{ item.description }}</td>
+              <td>{{ item.amount }}</td>
+              <td>{{ item.tax }}</td>
+              <td>{{ item.discount }}</td>
+              <td>{{ item.subtotal }}</td>
+              <!-- <td>{{ item.currency }}</td> -->
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <h3 class="total">
+        Total: 
+        {% if items and items[0].currency %}
+          {{ items[0].currency }}{{ total }}
+        {% else %}
+          ₹{{ total }}
+        {% endif %}
+      </h3>
+    </div>
+  </div>
+</body>
+</html>
